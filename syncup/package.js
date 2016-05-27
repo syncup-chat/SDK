@@ -1,10 +1,10 @@
 Package.describe({
   name: 'hblockhus:syncup',
-  version: '1.0.3',
+  version: '1.0.4',
   // Brief, one-line summary of the package.
   summary: 'an SDK for creating SyncUp Widgets',
   // URL to the Git repository containing the source code for this package.
-  git: '',
+  git: 'https://github.com/syncup-chat/SDK/tree/master/syncup',
   // By default, Meteor will default to using README.md for documentation.
   // To avoid submitting documentation, set this field to null.
   documentation: 'README.md'

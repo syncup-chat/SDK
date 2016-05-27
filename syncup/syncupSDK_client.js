@@ -21,12 +21,20 @@ function SDK() {
   var _name;
   var _title;
 
-  var confChangedHandler;
+  var contextPromise;
+  var Resolve;
+  var Reject;
+  var confChangedHandlers = {};
 
   this.init = function() {
     if(parent !== window && apiHost) {
-      parent.postMessage({type:'getContext'}, apiHost);
-      parent.postMessage({type:'getEmails'}, apiHost); 
+      if(_emails)
+        Meteor.call('publishEmails', _emails);
+      else
+      {
+        parent.postMessage({type:'getContext'}, apiHost);
+        parent.postMessage({type:'getEmails'}, apiHost); 
+      }
     }
     else if(localStorage['sci-email'] && localStorage['sci-token']) {
       var emails = {};
@@ -36,11 +44,20 @@ function SDK() {
       _confid = localStorage['sci-confid'];
       console.log('emails', emails);
       Meteor.call('publishEmails', emails);
-      Meteor.call('setContext', localStorage['sci-confid'], _email); 
+      Meteor.call('setContext', localStorage['sci-confid'], _email);
+      if(contextPromise)
+      {
+        var context = Context();
+        Resolve(context);
+        contextPromise = null;
+      }
+      for(var key in confChangedHandlers)
+        if(confChangedHandlers.hasOwnProperty(key))
+          confChangedHandlers[key](_confid, _email, _name, _title);
     }
   };
-
-  this.getContext = function() {
+  
+  var Context = function() {
     var context = {};
     if(_email)
       context.email = _email;
@@ -50,41 +67,46 @@ function SDK() {
       context.name = _name;
     if(_title)
       context.title = _title;
+    
     return context;
+  }
+
+  this.getContext = function() {
+    if(!_email && !_confid)
+    {
+      console.log('test');
+      contextPromise = contextPromise || new Promise(function(resolve,reject){
+        Resolve = resolve; 
+        Reject = reject;
+        
+      });
+      return contextPromise;
+    }
+   
+    return Promise.resolve(Context());
   };
 
-  this.setConf = function(cuid, email, name, title, spa) {
+  this.setConf = function(cuid, email, name, title) {
     //check(cuid, String);
-    _confid = cuid;
-    if(title)
-      _title = title;
-    if(email)
-    {
-      _email = email;
-      if(name)
-        _name = name;
-      Meteor.call('setContext', cuid, email); 
-    }
-    else 
-      Meteor.call('setContext', cuid);
-    
-    if(spa && confChangedHandler)
-      confChangedHandler(_confid, _email, _name, _title);
-    else if(parent && parent !== window)  
+    SetConf(cuid, email, name, title, false);
+    if(parent && parent !== window)  
       parent.postMessage({type:'setConf', confid:cuid}, apiHost);
   };
 
   this.registerConfChangedHandler = function(handler) {
     if(typeof(handler) === typeof(Function))
     {
-      confChangedHandler = handler;
+      var handlerID = (Math.random() + 1).toString(36).substring(8);
+      confChangedHandlers.handlerID = handler;
       if(_confid)
-        confChangedHandler(_confid, _email, name, _title);
+        confChangedHandlers.handlerID(_confid, _email, name, _title);
+      
+      return handlerID;
     }
   };
-
-  this.setEmails = function(emails) {
-    _emails = emails;
+  
+  this.removeConfChangedHandler = function(handlerID) {
+    delete confChangedHandlers[handlerID]; 
   };
 
   this.leaveConf = function(cuid, spa) {
@@ -99,10 +121,64 @@ function SDK() {
     check(cuid, String);
     Meteor.call('sendBotChat', message, cuid);
   };
+  
+  var SetConf = function(cuid, email, name, title, spa) {
+    _confid = cuid;
+    if(title)
+      _title = title;
+    if(email)
+    {
+      _email = email;
+      if(name)
+        _name = name;
+      Meteor.call('setContext', cuid, email); 
+    }
+    else 
+      Meteor.call('setContext', cuid);
+    
+    if(spa && confChangedHandlers.length)
+    {
+      for(var key in confChangedHandlers)
+        if(confChangedHandlers.hasOwnProperty(key))
+          confChangedHandlers[key](_confid, _email, _name, _title);
+    }
+  };
+  
+  //get the status of the Syncup Conferences by using post message handling
+  postMessageHandling = function(msg) { 
+    var origin = msg.origin || msg.originalEvent.origin;
+    if(origin.match(/https:\/\/[\S]*.syncup.at[\S]*/i)) { 
+      console.log("iframe recieved: " + JSON.stringify(msg.data));
+      if(msg.data.type) {
+        if(msg.data.type === 'confChanged' || msg.data.type === 'getContext') { 
+          var confid = msg.data.confid;
+            var email = msg.data.email;
+            var name = msg.data.name;
+            
+            SetConf(confid, email, name, msg.data.title, true);
+            if(contextPromise)
+            {
+              var context = Context();
+              Resolve(context);
+              contextPromise = null;
+            }
+        }
+        else if(msg.data.type === 'getEmails')
+        {
+          var emails = msg.data.emails;
+          _emails = emails;
+          Meteor.call('publishEmails', emails);
+        }
+      } 
+    } 
+  } 
+  window.addEventListener('message', postMessageHandling, false);
 };
 
+//global sdk object
 SyncupSDK = new SDK();
 
+//initialize the sdk when connected to the server
 var oldStat;
 Tracker.autorun(function() {
   var con = Meteor.status();
@@ -112,30 +188,3 @@ Tracker.autorun(function() {
 
   oldStat = con.status;
 });
-
-//get the status of the Syncup Conferences by using post message handling
-postMessageHandling = function(msg) { 
-  var origin = msg.origin || msg.originalEvent.origin;
-  if(origin.match(/https:\/\/[\S]*.syncup.at[\S]*/i)) { 
-    console.log("iframe recieved: " + JSON.stringify(msg.data));
-    if(msg.data.type) {
-      if(msg.data.type === 'confChanged' || msg.data.type === 'getContext') { 
-        var confid = msg.data.confid;
-        //if(confid && confid.length) {
-          var email = msg.data.email;
-          var name = msg.data.name;
-          
-          SyncupSDK.setConf(confid, email, name, msg.data.title, true);
-      }
-      else if(msg.data.type === 'getEmails')
-      {
-        var emails = msg.data.emails;
-        SyncupSDK.setEmails(emails);
-        Meteor.call('publishEmails', emails);
-        //Meteor.call('registerWebhooks', 'salesforceTask'); 
-      }
-    } 
-  } 
-} 
-window.addEventListener('message', postMessageHandling, false);
-

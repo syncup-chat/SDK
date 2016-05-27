@@ -55,10 +55,13 @@ Template.confidTask.events({
 ```
 ---
 
-The registerConfChangedHandler can be used to register a callback function that is fired when the user switches chat context within the Syncup page.
+The registerConfChangedHandler can be used to register a callback function that is fired when the user switches chat context within the Syncup page. 
+You can register multiple of these call backs.
+The removeConfChangedHandler removes the callback if you no longer need it. Don't forget to do this clean up if a template is going away.
 
+Register Handler:
 ```js
-SyncupSDK.registerConfChangedHandler(function(confid, email, name, title) {
+var handlerID = SyncupSDK.registerConfChangedHandler(function(confid, email, name, title) {
   var url = "/";
   if(confid && confid.length)
   {
@@ -76,6 +79,10 @@ SyncupSDK.registerConfChangedHandler(function(confid, email, name, title) {
 });
 ```
 
+Clean Up:
+```js
+SyncupSDK.removeConfChangedHandler(handlerID);
+```
 ---
 
 The sendBotChat method can be called to insert chat from the widget
