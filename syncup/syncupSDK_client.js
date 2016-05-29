@@ -136,11 +136,10 @@ function SDK() {
     else 
       Meteor.call('setContext', cuid);
     
-    if(spa && confChangedHandlers.length)
+    if(spa && Object.keys(confChangedHandlers).length)
     {
-      for(var key in confChangedHandlers)
-        if(confChangedHandlers.hasOwnProperty(key))
-          confChangedHandlers[key](_confid, _email, _name, _title);
+      for(let key of Object.keys(confChangedHandlers))
+	confChangedHandlers[key](_confid, _email, _name, _title);
     }
   };
   
@@ -148,20 +147,20 @@ function SDK() {
   postMessageHandling = function(msg) { 
     var origin = msg.origin || msg.originalEvent.origin;
     if(origin.match(/https:\/\/[\S]*.syncup.at[\S]*/i)) { 
-      console.log("iframe recieved: " + JSON.stringify(msg.data));
+      console.log("iframe received: " + JSON.stringify(msg.data));
       if(msg.data.type) {
         if(msg.data.type === 'confChanged' || msg.data.type === 'getContext') { 
           var confid = msg.data.confid;
-            var email = msg.data.email;
-            var name = msg.data.name;
-            
-            SetConf(confid, email, name, msg.data.title, true);
-            if(contextPromise)
-            {
-              var context = Context();
-              Resolve(context);
-              contextPromise = null;
-            }
+	  var email = msg.data.email;
+	  var name = msg.data.name;
+
+	  SetConf(confid, email, name, msg.data.title, true);
+	  if(contextPromise)
+	  {
+	    var context = Context();
+	    Resolve(context);
+	    contextPromise = null;
+	  }
         }
         else if(msg.data.type === 'getEmails')
         {
