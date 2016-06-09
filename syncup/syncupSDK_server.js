@@ -135,9 +135,9 @@ Meteor.methods({
       }
       var session = Sessions.findOne({sid: connectionID});
       if(session && session._id)
-	Sessions.update(session._id, {$set: {emailArray: emails, tokens:JSON.stringify(validTokens)}});
+	      Sessions.update(session._id, {$set: {emailArray: emails, tokens:JSON.stringify(validTokens)}});
       else 
-	Sessions.insert({sid:connectionID, emailArray:emails, tokens:JSON.stringify(validTokens)});
+	      Sessions.insert({sid:connectionID, emailArray:emails, tokens:JSON.stringify(validTokens)});
     });
   },
   setContext: function(confid, email) {
@@ -145,9 +145,9 @@ Meteor.methods({
     {
       var session = Sessions.findOne({sid: this.connection.id});
       if(session && session._id)
-	Sessions.update(session._id, {$set: {confid: confid}});
+	      Sessions.update(session._id, {$set: {confid: confid}});
       else 
-	Sessions.insert({sid:this.connection.id, confid:confid});
+	      Sessions.insert({sid:this.connection.id, confid:confid});
     }
     if(email)
     {
@@ -163,9 +163,9 @@ Meteor.methods({
         }
       }
       else if(confid && confid.length)
-       Confs.insert({email:email, confids: [confid]});
+        Confs.insert({email:email, confids: [confid]});
       else
-       Confs.insert({email:email, confids: []});
+        Confs.insert({email:email, confids: []});
     }
   },
 });
