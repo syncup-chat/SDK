@@ -15,6 +15,7 @@ Meteor.call('getAPIHost', function(error, result) {
 Meteor.subscribe('sessions');
 
 function SDK() { 
+  var _sentConfid;
   var _confid;
   var _emails;
   var _email;
@@ -57,9 +58,7 @@ function SDK() {
         Resolve(context);
         contextPromise = null;
       }
-      for(var key in confChangedHandlers)
-        if(confChangedHandlers.hasOwnProperty(key))
-          confChangedHandlers[key](_confid, _email, _name, _title);
+      sendConfUpdate();
     }
   };
   
@@ -75,7 +74,16 @@ function SDK() {
       context.title = _title;
     
     return context;
-  }
+  };
+
+  var sendConfUpdate = function() {
+    if(Object.keys(confChangedHandlers).length && _confid !== _sentConfid)
+    {
+      for(let key of Object.keys(confChangedHandlers))
+          confChangedHandlers[key](_confid, _email, _name, _title);
+      _sentConfid = _confid;
+    }
+  };
 
   this.getContext = function() {
     if(!_email && !_confid)
@@ -142,11 +150,8 @@ function SDK() {
     else 
       Meteor.call('setContext', cuid);
     
-    if(spa && Object.keys(confChangedHandlers).length)
-    {
-      for(let key of Object.keys(confChangedHandlers))
-          confChangedHandlers[key](_confid, _email, _name, _title);
-    }
+    if(spa)
+      sendConfUpdate();
   };
   
   //get the status of the Syncup Conferences by using post message handling

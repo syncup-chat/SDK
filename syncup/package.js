@@ -1,6 +1,6 @@
 Package.describe({
   name: 'hblockhus:syncup',
-  version: '1.0.5',
+  version: '1.0.7',
   // Brief, one-line summary of the package.
   summary: 'an SDK for creating SyncUp Widgets',
   // URL to the Git repository containing the source code for this package.
@@ -20,7 +20,7 @@ Package.onUse(function(api) {
   api.addFiles(['syncupSDK_client.js'], ['client']);
 
   api.export('SyncupSDK', 'client');
-  api.export(['Confs', 'Sessions'], 'server');
+  api.export(['Confs', 'Sessions', 'confidForConnection'], 'server');
 });
 
 Package.onTest(function(api) {

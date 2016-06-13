@@ -24,7 +24,7 @@ example minimum settings file:
 
 ## Client-side API
 
-The SyncupSDK object has the following methods:
+### The SyncupSDK object has the following methods:
 
 ---
 
@@ -56,7 +56,8 @@ Template.confidTask.events({
 ---
 
 The registerConfChangedHandler can be used to register a callback function that is fired when the user switches chat context within the Syncup page. 
-You can register multiple of these call backs.
+If the user is currently in a chat context at the time the callback is registered, it will immediatly be called with that state.
+You can register multiple of these callbacks.
 The removeConfChangedHandler removes the callback if you no longer need it. Don't forget to do this clean up if a template is going away.
 
 Register Handler:
@@ -114,7 +115,29 @@ Template.taskList.events({
 });
 ```
 
-## Server Side Collections
+## Server Side 
+
+### Methods
+
+The confidForConnection method will return a promise that resolves with the current confid given a session id
+
+```js
+Meteor.methods({
+    'myCollection.insert' : function(data) {
+      check(data, Object);
+      
+      confidForConnection( this.connection.id ).then( (confid) => {
+        myCollection.insert(confid, data});
+      }).catch( ( error ) => {
+        throw new Meteor.Error( '404' , error );
+      });
+    }
+  });
+```
+
+---
+
+### Collections
 
 you can use the Sessions and Confs Collections to help filter your data and keep your Meteor app secure
 

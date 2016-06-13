@@ -6,6 +6,35 @@ Sessions = new Mongo.Collection('sessions');
 // persistent email <-> conf mapping built as clients connect
 Confs = new Mongo.Collection('confs');
 
+confidForConnection = function(id) {
+    return new Promise(( resolve, reject ) => {
+      var session = Sessions.findOne({sid: id});
+      var handler;
+      if (!session || !session.confid) {
+        var CB = Meteor.bindEnvironment(function(id, entry) {
+          if(entry.sid === id && entry.confid) {
+              handler && Meteor.clearTimeout(handler);
+              resolve(entry.confid);
+            }
+        }, function(e){ throw e;});
+
+        SDP.find().observeChanges({
+          added: CB,
+          changed: CB
+        });
+
+        handler = Meteor.setTimeout(function() {
+            console.log("returning error from promise");
+            reject("ENOSESSION");
+        }, 5000);
+      }
+      else 
+      {
+        resolve(session.confid);
+      }
+    });
+};
+
 Meteor.startup(() => {
   Sessions.remove({});
   // code to run on server at startup
@@ -82,13 +111,12 @@ Meteor.methods({
      var url = Meteor.settings.syncup.apiHost+"/GroupMessage/"+encodeURIComponent(CUID)+"/"+token;
      console.log('http url:', url);
      var params = {
-	 widgetID: Meteor.settings.syncup.id,
-	 msg: JSON.stringify({txt: text}),
-	 widgetAPIKey: Meteor.settings.syncup.secret 
-       };
+        widgetID: Meteor.settings.syncup.id,
+        msg: JSON.stringify({txt: text}),
+        widgetAPIKey: Meteor.settings.syncup.secret 
+      };
      console.log('params:', params);
-     return Meteor.http.call("GET", url,
-     {
+     return Meteor.http.call("GET", url, {
        params:params,
      });
     },
@@ -106,7 +134,7 @@ Meteor.methods({
        
       console.log('token',token);
       if(token === null || Meteor.settings.syncup === null)
-	continue;
+	      continue;
       var url = Meteor.settings.syncup.apiHost+"/addWebhook/"+eventType+"/"+Meteor.settings.syncup.id+'/' 
                 +Meteor.settings.syncup.secret;//token;
       console.log('http url:', url);
@@ -118,7 +146,7 @@ Meteor.methods({
       console.log('params:', params);
       Meteor.http.call("GET", url,
       {
-	 params:params,
+	      params:params,
       });
     }
   },
