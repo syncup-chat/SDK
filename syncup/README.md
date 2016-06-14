@@ -4,7 +4,7 @@ A meteor package to use when writing a Syncup Widget
 
 ## Requirements in settings file
 
-In order to use this SDK you need to add three values to your settins file for "syncup"
+In order to use this SDK you need to add three values to your settings file for "syncup"
 * "apiHost" - the site you wish to run next to 
 * "id" - the Widget id given to you by SyncUp
 * "secret" - the Widget API key given to you by Syncup
