@@ -35,11 +35,12 @@ The getContext method will return an object that contains 4 possible keys
 * name - the current name of the user
 
 ```js
-var currContext = SyncupSDK.getContext()
-if(currContext.confid)
-  ;//Filter collection
-if(currContext.email)
-  ;//display email
+SyncupSDK.getContext().then(function(context){
+  if(currContext.confid)
+    ;//Filter collection
+  if(currContext.email)
+    ;//display email
+});
 ```
 
 ---
