@@ -9,27 +9,27 @@ Confs = new Mongo.Collection('confs');
 confidForConnection = function(id) {
     return new Promise(( resolve, reject ) => {
       var session = Sessions.findOne({sid: id});
-      var handler;
+      var timer, observer;
       if (!session || !session.confid) {
         var CB = Meteor.bindEnvironment(function(id, entry) {
           if(entry.sid === id && entry.confid) {
-              handler && Meteor.clearTimeout(handler);
+              timer && Meteor.clearTimeout(timer);
+              observer && observer.stop();
               resolve(entry.confid);
             }
         }, function(e){ throw e;});
 
-        SDP.find().observeChanges({
+        observer = Sessions.find().observeChanges({
           added: CB,
           changed: CB
         });
 
-        handler = Meteor.setTimeout(function() {
-            console.log("returning error from promise");
+        timer = Meteor.setTimeout(function() {
+            observer && observer.stop();
             reject("ENOSESSION");
         }, 5000);
       }
-      else 
-      {
+      else {
         resolve(session.confid);
       }
     });
@@ -50,36 +50,36 @@ Meteor.startup(() => {
 });
 
 // webhooks 
-Router.route("/webhook/:eventName/:email", 
-  { 
-    where : "server" 
-  }).get( function() {
-    console.log('GET webhook', this.params, this.request.body); 
-    //this.response.setHeader( 'access-control-allow-origin', 'https://syncup.at' ); 
-    var eventName = this.params.eventName;
-    var email = this.params.email;
-    var query  = this.request.query;
+// Router.route("/webhook/:eventName/:email", 
+//   { 
+//     where : "server" 
+//   }).get( function() {
+//     console.log('GET webhook', this.params, this.request.body); 
+//     //this.response.setHeader( 'access-control-allow-origin', 'https://syncup.at' ); 
+//     var eventName = this.params.eventName;
+//     var email = this.params.email;
+//     var query  = this.request.query;
      
-    var sessions = Sessions.find({}).fetch(); 
-    if ( sessions.length ) {
-      this.response.statusCode = 200;
-      this.response.end( JSON.stringify(this.request.body) ); }
-    else {
-      this.response.statusCode = 404;
-      this.response.end( "Sessions not found." );
-    }
-  }).post( function() {
-    console.log('POST webhook', this.params, this.request.body); 
-    //this.response.setHeader( 'access-control-allow-origin', 'https://syncup.at' ); 
-    var eventName = this.params.eventName;
-    var email = this.params.email;
-    var query  = this.request.query;
+//     var sessions = Sessions.find({}).fetch(); 
+//     if ( sessions.length ) {
+//       this.response.statusCode = 200;
+//       this.response.end( JSON.stringify(this.request.body) ); }
+//     else {
+//       this.response.statusCode = 404;
+//       this.response.end( "Sessions not found." );
+//     }
+//   }).post( function() {
+//     console.log('POST webhook', this.params, this.request.body); 
+//     //this.response.setHeader( 'access-control-allow-origin', 'https://syncup.at' ); 
+//     var eventName = this.params.eventName;
+//     var email = this.params.email;
+//     var query  = this.request.query;
      
-    this.response.statusCode = 200;
-    this.response.end( "recieved" ); 
-  }).put( function() {
-  }).delete( function() {
-  });
+//     this.response.statusCode = 200;
+//     this.response.end( "recieved" ); 
+//   }).put( function() {
+//   }).delete( function() {
+//   });
 
 // Method calls 
 Meteor.methods({
