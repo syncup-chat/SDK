@@ -127,8 +127,9 @@ Meteor.methods({
     'myCollection.insert' : function(data) {
       check(data, Object);
       
-      confidForConnection( this.connection.id ).then( (confid) => {
+      return confidForConnection( this.connection.id ).then( (confid) => {
         myCollection.insert(confid, data});
+        return confid;
       }).catch( ( error ) => {
         throw new Meteor.Error( '404' , error );
       });
