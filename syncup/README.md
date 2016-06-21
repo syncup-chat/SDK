@@ -4,7 +4,7 @@ A meteor package to use when writing a Syncup Widget
 
 ## Requirements in settings file
 
-In order to use this SDK you need to add three values to your settins file for "syncup"
+In order to use this SDK you need to add three values to your settings file for "syncup"
 * "apiHost" - the site you wish to run next to 
 * "id" - the Widget id given to you by SyncUp
 * "secret" - the Widget API key given to you by Syncup
@@ -35,11 +35,12 @@ The getContext method will return an object that contains 4 possible keys
 * name - the current name of the user
 
 ```js
-var currContext = SyncupSDK.getContext()
-if(currContext.confid)
-  ;//Filter collection
-if(currContext.email)
-  ;//display email
+SyncupSDK.getContext().then(function(context){
+  if(currContext.confid)
+    ;//Filter collection
+  if(currContext.email)
+    ;//display email
+});
 ```
 
 ---
