@@ -133,7 +133,14 @@ function SDK() {
   this.sendBotChat = function(message, cuid) {
     check(message, String);
     check(cuid, String);
-    Meteor.call('sendBotChat', message, cuid);
+    return new Promise(function(resolve,reject){
+      Meteor.call('sendBotChat', message, cuid, function(error, resp) {
+        if(error)
+          reject(error);
+        else
+          resolve(resp);
+      });
+    });
   };
   
   var SetConf = function(cuid, email, name, title, spa) {

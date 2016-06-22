@@ -109,7 +109,13 @@ Template.taskList.events({
     const message = name+' added a new todo: '+text;
     console.log(message);
 
-    SyncupSDK.sendBotChat(message, confid);
+    SyncupSDK.sendBotChat(message, confid).then(function(resp){
+      //http response from syncup server
+      if(resp.statusCode === 200)
+        ; //handle success 
+    }).catch(function(error){
+      //error handling
+    });
 
     target.text.value = '';
   },
