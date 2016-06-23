@@ -84,10 +84,20 @@ Meteor.startup(() => {
 // Method calls 
 Meteor.methods({
   getAPIHost : function() {
+    var session = Sessions.findOne({sid: this.connection.id});
+    if(session && session._id)
+      Sessions.update(session._id, {$set: {apiHost: Meteor.settings.syncup.apiHost}});
+    else 
+      Sessions.insert({sid:this.connection.id, apiHost: Meteor.settings.syncup.apiHost});
     return Meteor.settings.syncup.apiHost;
   },
   setAPIHost : function(host) {
-    Meteor.settings.syncup.apiHost = host;
+    // Meteor.settings.syncup.apiHost = host;
+    var session = Sessions.findOne({sid: this.connection.id});
+    if(session && session._id)
+      Sessions.update(session._id, {$set: {apiHost: host}});
+    else 
+      Sessions.insert({sid:this.connection.id, apiHost: host});
   },
   sendBotChat: function(text, CUID, email) {
      this.unblock();
@@ -111,18 +121,19 @@ Meteor.methods({
      console.log('token',token);
      if(token == null || Meteor.settings.syncup == null)
        return;
-     var url = Meteor.settings.syncup.apiHost+"/GroupMessage/"+encodeURIComponent(CUID)+"/"+token;
-     console.log('http url:', url);
-     var params = {
-        widgetID: Meteor.settings.syncup.id,
-        msg: JSON.stringify({txt: text}),
-        widgetAPIKey: Meteor.settings.syncup.secret 
-      };
-     console.log('params:', params);
-     return Meteor.http.call("GET", url, {
-       params:params,
-     });
-    },
+    var apiHost = session.apiHost ? session.apiHost : Meteor.settings.syncup.apiHost;
+    var url = apiHost+"/GroupMessage/"+encodeURIComponent(CUID)+"/"+token;
+    console.log('http url:', url);
+    var params = {
+      widgetID: Meteor.settings.syncup.id,
+      msg: JSON.stringify({txt: text}),
+      widgetAPIKey: Meteor.settings.syncup.secret 
+    };
+    console.log('params:', params);
+    return Meteor.http.call("GET", url, {
+      params:params,
+    });
+  },
   registerWebhook: function(eventType) { //also have list and delete
     this.unblock();
     var session = Sessions.findOne({sid: this.connection.id});
@@ -138,7 +149,8 @@ Meteor.methods({
       console.log('token',token);
       if(token === null || Meteor.settings.syncup === null)
 	      continue;
-      var url = Meteor.settings.syncup.apiHost+"/addWebhook/"+eventType+"/"+Meteor.settings.syncup.id+'/' 
+      var apiHost = session.apiHost ? session.apiHost : Meteor.settings.syncup.apiHost;
+      var url = apiHost+"/addWebhook/"+eventType+"/"+Meteor.settings.syncup.id+'/' 
                 +Meteor.settings.syncup.secret;//token;
       console.log('http url:', url);
       var params = {
@@ -156,7 +168,10 @@ Meteor.methods({
   publishEmails: function(emailsToTokens) {
     console.log(emailsToTokens);
     var connectionID = this.connection.id;
-    Meteor.http.call("POST", Meteor.settings.syncup.apiHost+"/validateTokens",
+    var session = Sessions.findOne({sid: this.connection.id});
+    if(!session || !session.apiHost)
+      return;
+    Meteor.http.call("POST", session.apiHost+"/validateTokens",
                      {data:emailsToTokens}, function(error, result) {
       var validTokens = result.content ? JSON.parse(result.content) : {};
       //console.log(validTokens, typeof(validTokens));
@@ -164,7 +179,7 @@ Meteor.methods({
       for(var key in validTokens) {
         emails.push(key);
       }
-      var session = Sessions.findOne({sid: connectionID});
+      // var session = Sessions.findOne({sid: connectionID});
       if(session && session._id)
 	      Sessions.update(session._id, {$set: {emailArray: emails, tokens:JSON.stringify(validTokens)}});
       else 
