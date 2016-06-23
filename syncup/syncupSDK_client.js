@@ -3,15 +3,22 @@ import { check } from 'meteor/check';
 import { Tracker } from 'meteor/tracker';
 
 var apiHost;
-Meteor.call('getAPIHost', function(error, result) {
-  apiHost = "https://syncup.at"; //default
-  if(error)
-    console.log(error)
-  else 
-    apiHost = result;
+var params = window.location.search.split('host=');
+if(params.length > 1) {
+  apiHost = params[1];
+  Meteor.call('setAPIHost', 'https://'+apiHost);
+}
+else 
+  Meteor.call('getAPIHost', function(error, result) {
+    apiHost = "https://syncup.at"; //default
+    if(error)
+      console.log(error)
+    else 
+      apiHost = result;
 
-  SyncupSDK.init();
-});
+    SyncupSDK.init();
+  });
+  
 Meteor.subscribe('sessions');
 
 function SDK() { 

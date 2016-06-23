@@ -86,6 +86,9 @@ Meteor.methods({
   getAPIHost : function() {
     return Meteor.settings.syncup.apiHost;
   },
+  setAPIHost : function(host) {
+    Meteor.settings.syncup.apiHost = host;
+  },
   sendBotChat: function(text, CUID, email) {
      this.unblock();
      var session = Sessions.findOne({sid: this.connection.id});
