@@ -7,10 +7,10 @@ var params = window.location.search.substr(1).split('&');
 if(params.length) {
   params.some(function(kv) {
     var param = kv.split('=');
-    if (param[0] = 'origin') {
+    if (param[0] === 'origin') {
       apiHost = decodeURIComponent(param[1]);
       Meteor.call('setAPIHost', apiHost, function(error, result) {
-	SyncupSDK.init();
+        SyncupSDK.init();
       });
       return true;
     }
@@ -36,9 +36,13 @@ function SDK() {
   var _name;
   var _title;
 
+  var _fullscreen = false;
+
   var contextPromise;
-  var Resolve;
-  var Reject;
+  var contextCB = {};
+  var fullscreenPromise;
+  var fullscreenCB = {};
+  
   var confChangedHandlers = {};
 
   this.init = function() {
@@ -50,7 +54,7 @@ function SDK() {
     }
     else if(window.webkit)
     {
-      if(apiHost && !_emails) {
+      if(!_emails) {
         window.webkit.messageHandlers.getContext.postMessage({});
         window.webkit.messageHandlers.getEmails.postMessage({});
       }
@@ -69,7 +73,7 @@ function SDK() {
       if(contextPromise)
       {
         var context = Context();
-        Resolve(context);
+        contextCB.resolve(context);
         contextPromise = null;
       }
       sendConfUpdate();
@@ -99,14 +103,26 @@ function SDK() {
     }
   };
 
+  this.toggleFullscreen = function() {
+    var enabled = !_fullscreen;
+    
+    fullscreenPromise = fullscreenPromise || new Promise(function(resolve,reject){
+      fullscreenCB.resolve = resolve; 
+      fullscreenCB.reject = reject;
+    });
+    if(parent !== window) { //only works for spa, not app or localhost dev
+        parent.postMessage({type:'goFull', enabled}, apiHost);
+    }
+
+    return fullscreenPromise; 
+  };
+
   this.getContext = function() {
     if(!_email && !_confid)
     {
-      console.log('test');
       contextPromise = contextPromise || new Promise(function(resolve,reject){
-        Resolve = resolve; 
-        Reject = reject;
-        
+        contextCB.resolve = resolve; 
+        contextCB.reject = reject;
       });
       return contextPromise;
     }
@@ -190,12 +206,19 @@ function SDK() {
             if(contextPromise)
             {
               var context = Context();
-              Resolve(context);
+              contextCB.resolve(context);
               contextPromise = null;
             }
         }
-        else if(msg.data.type === 'getEmails')
-        {
+        else if(msg.data.type === 'goFull') {
+          _fullscreen = msg.data.enabled;
+          if(fullscreenPromise)
+          {
+            fullscreenCB.resolve(_fullscreen);
+            fullscreenPromise = null;
+          }
+        }
+        else if(msg.data.type === 'getEmails') {
           var emails = msg.data.emails;
           _emails = emails;
           Meteor.call('publishEmails', emails);
@@ -220,7 +243,7 @@ function SDK() {
             if(contextPromise)
             {
               var context = Context();
-              Resolve(context);
+              contextCB.resolve(context);
               contextPromise = null;
             }
         }

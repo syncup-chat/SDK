@@ -1,6 +1,6 @@
 Package.describe({
   name: 'hblockhus:syncup',
-  version: '1.0.15',
+  version: '1.0.17',
   // Brief, one-line summary of the package.
   summary: 'an SDK for creating SyncUp Widgets',
   // URL to the Git repository containing the source code for this package.
