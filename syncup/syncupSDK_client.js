@@ -194,7 +194,7 @@ function SDK() {
   //get the status of the Syncup Conferences by using post message handling
   postMessageHandling = function(msg) { 
     var origin = msg.origin || msg.originalEvent.origin;
-    if(origin.match(/https:\/\/[\S]*.syncup.at[\S]*/i)) { 
+    if(origin.match(/https:\/\/(?:\w+.)*syncup.at[\S]*/i)) {
       console.log("iframe recieved: " + JSON.stringify(msg.data));
       if(msg.data.type) {
         if(msg.data.type === 'confChanged' || msg.data.type === 'getContext') { 
